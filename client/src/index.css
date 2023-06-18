@@ -1,0 +1,29 @@
+*,
+*:after,
+*:before {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+  color: black;
+}
+
+html,
+body {
+  outline: none;
+}
+
+body {
+  font-family: "FontAwesome", sans-serif;
+  box-sizing: border-box;
+  font-size: 16px;
+  background-color: #262626;
+  position: relative;
+}
+
+a {
+  text-decoration: none;
+}
+
+img {
+  outline: none;
+}
