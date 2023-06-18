@@ -1,7 +1,7 @@
 import axios, { AxiosInstance, InternalAxiosRequestConfig } from "axios";
 
 const instance: AxiosInstance = axios.create({
-  baseURL: "https://diplom-delta.vercel.app",
+  baseURL: "https://information-transfer.vercel.app",
 });
 
 instance.interceptors.request.use((config: InternalAxiosRequestConfig) => {
