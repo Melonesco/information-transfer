@@ -35,7 +35,6 @@ const Profile = () => {
         const file = event.target.files[0];
         formData.append("image", file);
         const { data } = await instance.post("/upload/users/images", formData);
-        console.log(data);
         setImagePreview(data.url);
       }
     } catch (err) {

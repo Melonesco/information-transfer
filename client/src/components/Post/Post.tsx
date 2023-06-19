@@ -93,7 +93,7 @@ const Post: React.FC<IPostProps> = ({ data }) => {
 
             <S.BlockUpload>
               <S.ButtonUpload onClick={handleDownload}>Скачати</S.ButtonUpload>
-              <S.FileName>Test</S.FileName>
+              <S.FileName>Документ.txt</S.FileName>
             </S.BlockUpload>
             <S.Format>Формат файлу: {data?.fileFormat}</S.Format>
           </S.Content>

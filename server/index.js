@@ -17,62 +17,168 @@ app.use(cookieParser());
 
 app.use("/", routes);
 
-const storageImg = multer.diskStorage({
-  destination: (_, __, cb) => {
-    cb(null, "./uploads/images");
+const storageImg = multer.memoryStorage();
+const storageUserImg = multer.diskStorage({
+  destination: (req, file, cb) => {
+    cb(null, "uploads/users/images");
   },
-  filename: (_, file, cb) => {
-    cb(null, file.originalname);
-  },
-});
-
-const storageAvatarsImg = multer.diskStorage({
-  destination: (_, __, cb) => {
-    cb(null, "./uploads/users/images");
-  },
-  filename: (_, file, cb) => {
-    cb(null, file.originalname);
+  filename: (req, file, cb) => {
+    const uniqueSuffix = Date.now() + "-" + Math.round(Math.random() * 1e9);
+    cb(null, uniqueSuffix + "-" + file.originalname);
   },
 });
-
 const storageFile = multer.diskStorage({
-  destination: (_, __, cb) => {
-    cb(null, "./uploads/files");
+  destination: (req, file, cb) => {
+    cb(null, "uploads/files");
   },
-  filename: (_, file, cb) => {
-    cb(null, file.originalname);
+  filename: (req, file, cb) => {
+    const uniqueSuffix = Date.now() + "-" + Math.round(Math.random() * 1e9);
+    cb(null, uniqueSuffix + "-" + file.originalname);
   },
 });
 
-const upload = multer({ storage: storageImg });
-const uploadAvatarsImg = multer({ storage: storageAvatarsImg });
-const upload2 = multer({ storage: storageFile });
+const uploadImg = multer({ storage: storageImg });
+const uploadUserImg = multer({ storage: storageUserImg });
+const uploadFile = multer({ storage: storageFile });
+
 app.use("/uploads/images", express.static("uploads/images"));
 app.use("/uploads/users/images", express.static("uploads/users/images"));
 app.use("/uploads/files", express.static("uploads/files"));
 
-app.post("/upload/images", checkAuth, upload.single("image"), (req, res) => {
-  res.json({
-    url: `/uploads/images/${req.file.originalname}`,
-  });
-});
-
-app.post("/upload/files", checkAuth, upload2.single("file"), (req, res) => {
-  res.json({
-    url: `/uploads/files/${req.file.originalname}`,
-  });
-});
+app.post(
+  "/upload/images",
+  checkAuth,
+  uploadImg.single("image"),
+  async (req, res) => {
+    try {
+      const { originalname, buffer } = req.file;
+      const encodedImage = buffer.toString("base64");
+      const response = await fetch(
+        `${process.env.KV_REST_API_URL}/set/${originalname}`,
+        {
+          method: "PUT",
+          headers: {
+            Authorization: `Bearer ${process.env.KV_REST_API_TOKEN}`,
+            "Content-Type": "application/octet-stream",
+          },
+          body: encodedImage,
+        }
+      );
+      if (response.ok) {
+        res.json({
+          url: `/uploads/images/${originalname}`,
+        });
+      } else {
+        throw new Error("Image upload failed");
+      }
+    } catch (error) {
+      console.error("Error uploading image:", error);
+      res.status(500).json({ error: "Image upload failed" });
+    }
+  }
+);
 
 app.post(
   "/upload/users/images",
   checkAuth,
-  uploadAvatarsImg.single("image"),
-  (req, res) => {
-    res.json({
-      url: `/uploads/users/images/${req.file.originalname}`,
-    });
+  uploadUserImg.single("image"),
+  async (req, res) => {
+    try {
+      const { originalname, buffer } = req.file;
+      const encodedImage = buffer.toString("base64");
+      const response = await fetch(
+        `${process.env.KV_REST_API_URL}/set/${originalname}`,
+        {
+          method: "PUT",
+          headers: {
+            Authorization: `Bearer ${process.env.KV_REST_API_TOKEN}`,
+            "Content-Type": "application/octet-stream",
+          },
+          body: encodedImage,
+        }
+      );
+      if (response.ok) {
+        res.json({
+          url: `/upload/users/images/${originalname}`,
+        });
+      } else {
+        throw new Error("Image upload failed");
+      }
+    } catch (error) {
+      console.error("Error uploading image:", error);
+      res.status(500).json({ error: "Image upload failed" });
+    }
   }
 );
+
+app.post(
+  "/upload/files",
+  checkAuth,
+  uploadFile.single("file"),
+  async (req, res) => {
+    try {
+      const { originalname, path } = req.file;
+      // Process the uploaded file for "/uploads/files"
+      // ...
+      res.json({
+        url: `/uploads/files/${originalname}`,
+      });
+    } catch (error) {
+      console.error("Error uploading file:", error);
+      res.status(500).json({ error: "File upload failed" });
+    }
+  }
+);
+
+app.get("/images/:filename", async (req, res) => {
+  try {
+    const { filename } = req.params;
+    const response = await fetch(
+      `${process.env.KV_REST_API_URL}/get/${filename}`,
+      {
+        headers: {
+          Authorization: `Bearer ${process.env.KV_REST_API_TOKEN}`,
+        },
+      }
+    );
+    if (response.ok) {
+      const encodedImage = await response.text();
+      const decodedImage = Buffer.from(encodedImage, "base64");
+      res.set("Content-Type", "image/jpeg");
+      res.send(decodedImage);
+    } else {
+      res.status(404).json({ error: "Image not found" });
+    }
+  } catch (error) {
+    console.error("Error retrieving image:", error);
+    res.status(500).json({ error: "Failed to retrieve image" });
+  }
+});
+
+app.get("/users/images/:filename", async (req, res) => {
+  try {
+    const { filename } = req.params;
+    const response = await fetch(
+      `${process.env.KV_REST_API_URL}/get/${filename}`,
+      {
+        headers: {
+          Authorization: `Bearer ${process.env.KV_REST_API_TOKEN}`,
+        },
+      }
+    );
+    if (response.ok) {
+      const encodedImage = await response.text();
+      const decodedImage = Buffer.from(encodedImage, "base64");
+      res.set("Content-Type", "image/jpeg");
+      res.send(decodedImage);
+    } else {
+      res.status(404).json({ error: "Image not found" });
+    }
+  } catch (error) {
+    console.error("Error retrieving image:", error);
+    res.status(500).json({ error: "Failed to retrieve image" });
+  }
+});
 
 const port = process.env.PORT || 4000;
 
